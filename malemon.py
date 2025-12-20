@@ -10,7 +10,7 @@ import sys
 class MarkdownEditor:
     def __init__(self, root):
         self.root = root
-        self.root.title("Markdown Editor")
+        self.root.title("Malemon")
         self.root.geometry("1200x800")
         
         # 文件路径
@@ -221,11 +221,19 @@ class MarkdownEditor:
     def insert_format(self, prefix, suffix):
         """插入格式文本"""
         if self.editor.tag_ranges(tk.SEL):
+            sel_start = self.editor.index(tk.SEL_FIRST)
+            sel_end = self.editor.index(tk.SEL_LAST)
+            
             # 获取选中文本
-            selected = self.editor.get(tk.SEL_FIRST, tk.SEL_LAST)
-            # 替换为带格式的文本
-            self.editor.delete(tk.SEL_FIRST, tk.SEL_LAST)
-            self.editor.insert(tk.SEL_FIRST, f"{prefix}{selected}{suffix}")
+            selected = self.editor.get(sel_start, sel_end)
+            
+            # 替换为带格式的文本（使用保存的位置）
+            self.editor.delete(sel_start, sel_end)
+            self.editor.insert(sel_start, f"{prefix}{selected}{suffix}")
+            
+            # 重新选中格式化后的文本
+            new_end = self.editor.index(f"{sel_start}+{len(prefix) + len(selected) + len(suffix)}c")
+            self.editor.tag_add(tk.SEL, sel_start, new_end)
         else:
             # 直接插入格式文本
             self.editor.insert(tk.INSERT, f"{prefix}{suffix}")
@@ -247,20 +255,39 @@ class MarkdownEditor:
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("header", start, end)
         
-        # 高亮加粗文本
-        for match in re.finditer(r'\*\*(.*?)\*\*', content):
+        # 高亮加粗
+        # 先匹配四个星号的加粗斜体
+        for match in re.finditer(r'\*\*\*(.*?)\*\*\*', content):
+            start = f"1.0 + {match.start()} chars"
+            end = f"1.0 + {match.end()} chars"
+            self.editor.tag_add("bold", start, end)
+            self.editor.tag_add("italic", start, end)
+        
+        # 高亮普通加粗（两个星号）
+        for match in re.finditer(r'(?<!\*)\*\*(?!\*)(.*?)(?<!\*)\*\*(?!\*)', content):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("bold", start, end)
         
-        # 高亮斜体文本
-        for match in re.finditer(r'\*(.*?)\*', content):
+        # 高亮斜体（单个星号，确保不是加粗的一部分）
+        for match in re.finditer(r'(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)', content):
+            start = f"1.0 + {match.start()} chars"
+            end = f"1.0 + {match.end()} chars"
+            self.editor.tag_add("italic", start, end)
+        
+        # 高亮下划线样式的加粗和斜体
+        for match in re.finditer(r'__(.*?)__', content):
+            start = f"1.0 + {match.start()} chars"
+            end = f"1.0 + {match.end()} chars"
+            self.editor.tag_add("bold", start, end)
+        
+        for match in re.finditer(r'_(.*?)_', content):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("italic", start, end)
         
         # 高亮代码块
-        for match in re.finditer(r'```.*?```', content, re.DOTALL):
+        for match in re.finditer(r'```[\s\S]*?```', content):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("code_block", start, end)
@@ -272,22 +299,23 @@ class MarkdownEditor:
             self.editor.tag_add("code_inline", start, end)
         
         # 高亮链接
-        for match in re.finditer(r'\[.*?\]\(.*?\)', content):
+        for match in re.finditer(r'\[.*?\]\([^\)]*\)', content):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("link", start, end)
             
         # 高亮列表
-        for match in re.finditer(r'^[ \t]*(\*|\+|-|\d+\.)\s+', content, re.MULTILINE):
+        for match in re.finditer(r'^[\t ]*([*+-]|\d+\.)\s+', content, re.MULTILINE):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("list", start, end)
-    
+
         # 高亮引用
         for match in re.finditer(r'^>.*$', content, re.MULTILINE):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("quote", start, end)
+
     
     def apply_syntax_highlighting_colors(self):
         """应用语法高亮颜色（根据主题）"""
@@ -589,7 +617,7 @@ class MarkdownEditor:
     
     def update_title(self):
         """更新窗口标题"""
-        title = "Markdown Editor"
+        title = "Malemon"
         if self.current_file:
             title = f"{os.path.basename(self.current_file)} - {title}"
         if self.is_modified:
@@ -611,7 +639,7 @@ class MarkdownEditor:
     def show_about(self):
         """显示关于对话框"""
         about_text = """
-        Markdown Editor v2.0
+        Malemon v2.0
         
         一个简洁美观的Markdown编辑器，支持实时预览和语法高亮。
         
@@ -627,7 +655,7 @@ class MarkdownEditor:
         • 快捷键支持
         • 格式工具菜单
         
-        © 2024 Markdown Editor
+        © 2025 Malemon
         """
         
         messagebox.showinfo("关于", about_text.strip())
