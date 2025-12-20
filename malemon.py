@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, font, messagebox
 import markdown
 from ttkbootstrap import Style
 from tkhtmlview import HTMLLabel
@@ -13,6 +13,9 @@ class MarkdownEditor:
         self.root.title("Malemon")
         self.root.geometry("1200x800")
         
+        # 设置应用程序图标
+        self.set_app_icon()
+        
         # 文件路径
         self.current_file = None
         
@@ -24,6 +27,8 @@ class MarkdownEditor:
         
         # 创建样式（只创建一次）
         self.style = Style(theme="litera")
+        text_font = font.nametofont("TkTextFont")
+        text_font.configure(family="黑体")
         
         # 创建组件和菜单
         self.create_main_widgets()
@@ -42,6 +47,25 @@ class MarkdownEditor:
         # 初始更新标题
         self.update_title()
     
+    def set_app_icon(self):
+        """设置应用程序图标"""
+        try:
+            # 尝试获取打包后的资源路径
+            if hasattr(sys, '_MEIPASS'):
+                # PyInstaller打包后的资源目录
+                icon_path = os.path.join(sys._MEIPASS, "icon.png")
+            else:
+                # 开发环境下的资源路径
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                icon_path = os.path.join(script_dir, "icon.png")
+            
+            # 如果图标文件存在，则设置为应用程序图标
+            if os.path.exists(icon_path):
+                self.root.iconphoto(False, tk.PhotoImage(file=icon_path))
+        except Exception as e:
+            # 如果设置图标失败，不进行任何操作（避免影响程序正常运行）
+            pass
+
     def create_main_widgets(self):
         """创建主要UI组件（不包括菜单栏）"""
         # 创建主框架
@@ -56,17 +80,6 @@ class MarkdownEditor:
         ttk.Button(toolbar, text="📁 打开", command=self.open_file, style="primary.TButton").pack(side=tk.LEFT, padx=2)
         ttk.Button(toolbar, text="💾 保存", command=self.save_file, style="success.TButton").pack(side=tk.LEFT, padx=2)
         ttk.Button(toolbar, text="🔄 新建", command=self.new_file, style="info.TButton").pack(side=tk.LEFT, padx=2)
-        
-        # 主题选择下拉框
-        theme_frame = ttk.Frame(toolbar)
-        theme_frame.pack(side=tk.LEFT, padx=10)
-        ttk.Label(theme_frame, text="主题:").pack(side=tk.LEFT, padx=(0, 5))
-        self.theme_var = tk.StringVar(value="litera")
-        self.theme_combo = ttk.Combobox(theme_frame, textvariable=self.theme_var, 
-                                       values=["litera", "vapor", "darkly", "cyborg", "superhero"], 
-                                       state="readonly", width=10)
-        self.theme_combo.pack(side=tk.LEFT)
-        self.theme_combo.bind("<<ComboboxSelected>>", self.change_theme)
         
         # 创建分割窗格
         paned_window = ttk.PanedWindow(main_frame, orient=tk.HORIZONTAL)
@@ -90,7 +103,7 @@ class MarkdownEditor:
         # 创建编辑器
         self.editor = tk.Text(editor_container, 
                              wrap=tk.WORD,
-                             font=("Consolas", 12),
+                             font=("Consolas", 14),
                              undo=True,
                              padx=10,
                              pady=10,
@@ -355,7 +368,7 @@ class MarkdownEditor:
                 self.root.after_cancel(self.after_id)
             
             # 设置新的定时器
-            self.after_id = self.root.after(300, self.update_preview_and_status)
+            self.after_id = self.root.after(150, self.update_preview_and_status)
     
     def update_preview_and_status(self):
         """更新预览和状态栏"""
@@ -388,21 +401,25 @@ class MarkdownEditor:
     
     def render_markdown(self, markdown_text):
         """将markdown渲染为HTML"""
-        if not markdown_text:
-            return "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
-        
-        # 转换为HTML
-        html = markdown.markdown(
-            markdown_text,
-            extensions=[
-                'markdown.extensions.extra',
-                'markdown.extensions.codehilite',
-                'markdown.extensions.tables',
-                'markdown.extensions.fenced_code',
-                'markdown.extensions.nl2br'
-            ]
-        )
-        return html
+        try:
+            if not markdown_text:
+                return "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
+            
+            # 转换为HTML
+            html = markdown.markdown(
+                markdown_text,
+                extensions=[
+                    'markdown.extensions.extra',
+                    'markdown.extensions.codehilite',
+                    'markdown.extensions.tables',
+                    'markdown.extensions.fenced_code',
+                    'markdown.extensions.nl2br'
+                ]
+            )
+            return html
+        except Exception as e:
+            # 出现错误时返回错误信息
+            return f"<h1>Markdown 解析错误</h1><p>{str(e)}</p><pre>{markdown_text}</pre>"
     
     def new_file(self):
         """新建文件"""
@@ -521,17 +538,12 @@ class MarkdownEditor:
         else:  # 否
             return True
     
-    def change_theme(self, event=None):
-        """切换主题（通过下拉菜单）"""
-        theme = self.theme_var.get()
-        self.change_theme_directly(theme)
     
     def change_theme_directly(self, theme_name):
         """直接切换主题"""
         # 切换主题
         self.style.theme_use(theme_name)
         self.theme_label.config(text=f"主题: {theme_name}")
-        self.theme_var.set(theme_name)
         
         # 更新预览
         content = self.editor.get("1.0", tk.END)
@@ -659,6 +671,10 @@ class MarkdownEditor:
         """
         
         messagebox.showinfo("关于", about_text.strip())
+
+# 常量定义
+THEMES = ["litera", "vapor", "darkly", "cyborg", "superhero"]
+PREVIEW_DEFAULT_HTML = "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
 
 if __name__ == "__main__":
     root = tk.Tk()
