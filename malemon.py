@@ -8,6 +8,9 @@ import re
 import sys
 
 class MarkdownEditor:
+    # 常量定义
+    THEMES = ["litera", "vapor", "darkly", "cyborg", "superhero"]
+    PREVIEW_DEFAULT_HTML = "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
     def __init__(self, root):
         self.root = root
         self.root.title("Malemon")
@@ -28,7 +31,7 @@ class MarkdownEditor:
         # 创建样式（只创建一次）
         self.style = Style(theme="litera")
         text_font = font.nametofont("TkTextFont")
-        text_font.configure(family="黑体")
+        text_font.configure(family="SimHei")
         
         # 创建组件和菜单
         self.create_main_widgets()
@@ -129,7 +132,7 @@ class MarkdownEditor:
         
         # 创建预览区域
         self.preview = HTMLLabel(preview_container, 
-                               html="<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>",
+                               html=self.PREVIEW_DEFAULT_HTML,
                                yscrollcommand=preview_scroll_y.set)
         self.preview.pack(fill=tk.BOTH, expand=True)
         
@@ -197,8 +200,7 @@ class MarkdownEditor:
         
         # 主题子菜单
         theme_menu = tk.Menu(view_menu, tearoff=0)
-        themes = ["litera", "vapor", "darkly", "cyborg", "superhero"]
-        for theme in themes:
+        for theme in self.THEMES:
             theme_menu.add_command(label=theme, command=lambda t=theme: self.change_theme_directly(t))
         view_menu.add_cascade(label="切换主题", menu=theme_menu)
         
@@ -403,7 +405,7 @@ class MarkdownEditor:
         """将markdown渲染为HTML"""
         try:
             if not markdown_text:
-                return "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
+                return self.PREVIEW_DEFAULT_HTML
             
             # 转换为HTML
             html = markdown.markdown(
@@ -433,7 +435,7 @@ class MarkdownEditor:
             self.after_id = None
         
         self.editor.delete("1.0", tk.END)
-        self.preview.set_html("<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>")
+        self.preview.set_html(self.PREVIEW_DEFAULT_HTML)
         self.current_file = None
         self.is_modified = False
         self.last_content = ""
@@ -672,9 +674,6 @@ class MarkdownEditor:
         
         messagebox.showinfo("关于", about_text.strip())
 
-# 常量定义
-THEMES = ["litera", "vapor", "darkly", "cyborg", "superhero"]
-PREVIEW_DEFAULT_HTML = "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
 
 if __name__ == "__main__":
     root = tk.Tk()
