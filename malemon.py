@@ -30,8 +30,6 @@ class MarkdownEditor:
         
         # 创建样式（只创建一次）
         self.style = Style(theme="litera")
-        text_font = font.nametofont("TkTextFont")
-        text_font.configure(family="SimHei")
         
         # 创建组件和菜单
         self.create_main_widgets()
@@ -126,18 +124,10 @@ class MarkdownEditor:
         preview_container = ttk.Frame(preview_frame)
         preview_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # 创建预览滚动条
-        preview_scroll_y = ttk.Scrollbar(preview_container)
-        preview_scroll_y.pack(side=tk.RIGHT, fill=tk.Y)
-        
         # 创建预览区域
         self.preview = HTMLLabel(preview_container, 
-                               html=self.PREVIEW_DEFAULT_HTML,
-                               yscrollcommand=preview_scroll_y.set)
+                               html=self.PREVIEW_DEFAULT_HTML)
         self.preview.pack(fill=tk.BOTH, expand=True)
-        
-        # 配置预览滚动条
-        preview_scroll_y.config(command=self.preview.yview)
         
         # 创建状态栏
         status_frame = ttk.Frame(main_frame)
@@ -258,7 +248,7 @@ class MarkdownEditor:
     def highlight_syntax(self):
         """实现简单的语法高亮"""
         # 清除所有标签
-        for tag in ["header", "bold", "italic", "code_block", "code_inline", "link", "list", "quote"]:
+        for tag in ["header", "bold", "italic", "code_block", "code_inline", "link", "list", "quote", "bold-italic"]:
             self.editor.tag_remove(tag, "1.0", tk.END)
         
         # 获取所有文本
@@ -275,8 +265,7 @@ class MarkdownEditor:
         for match in re.finditer(r'\*\*\*(.*?)\*\*\*', content):
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
-            self.editor.tag_add("bold", start, end)
-            self.editor.tag_add("italic", start, end)
+            self.editor.tag_add("bold-italic", start, end)
         
         # 高亮普通加粗（两个星号）
         for match in re.finditer(r'(?<!\*)\*\*(?!\*)(.*?)(?<!\*)\*\*(?!\*)', content):
@@ -330,32 +319,31 @@ class MarkdownEditor:
             start = f"1.0 + {match.start()} chars"
             end = f"1.0 + {match.end()} chars"
             self.editor.tag_add("quote", start, end)
-
-    
+        
     def apply_syntax_highlighting_colors(self):
         """应用语法高亮颜色（根据主题）"""
         current_theme = self.style.theme.name
         
         if current_theme in ["vapor", "darkly", "cyborg", "superhero"]:
-            # 深色主题颜色
             self.editor.tag_config("header", foreground="#66ccff")
-            self.editor.tag_config("bold", foreground="#ff6666")
-            self.editor.tag_config("italic", foreground="#66ff66")
-            self.editor.tag_config("code_block", background="#2a2a2a", foreground="#ffffff")
+            self.editor.tag_config("bold-italic", foreground="#ffaa66", font=("", 14, "bold italic"))
+            self.editor.tag_config("bold", foreground="#ff7777", font=("", 14, "bold"))
+            self.editor.tag_config("italic", foreground="#77ff77", font=("", 14, "italic"))
+            self.editor.tag_config("code_block", background="#2a2a2a", foreground="#e6e6e6")
             self.editor.tag_config("code_inline", background="#3a3a3a", foreground="#ffffff")
             self.editor.tag_config("link", foreground="#ffcc66")
             self.editor.tag_config("list", foreground="#cc99ff")
-            self.editor.tag_config("quote", foreground="#99ccff")
+            self.editor.tag_config("quote", foreground="#99ccff", font=("", 14, "italic"))
         else:
-            # 浅色主题颜色
             self.editor.tag_config("header", foreground="#0066cc")
-            self.editor.tag_config("bold", foreground="#cc0000")
-            self.editor.tag_config("italic", foreground="#00cc00")
-            self.editor.tag_config("code_block", background="#f0f0f0", foreground="#000000")
+            self.editor.tag_config("bold-italic", foreground="#cc5500", font=("", 14, "bold italic"))
+            self.editor.tag_config("bold", foreground="#cc2222", font=("", 14, "bold"))
+            self.editor.tag_config("italic", foreground="#00aa00", font=("", 14, "italic"))
+            self.editor.tag_config("code_block", background="#f5f5f5", foreground="#333333")
             self.editor.tag_config("code_inline", background="#e8e8e8", foreground="#000000")
             self.editor.tag_config("link", foreground="#cc6600")
             self.editor.tag_config("list", foreground="#9900cc")
-            self.editor.tag_config("quote", foreground="#006699")
+            self.editor.tag_config("quote", foreground="#006699", font=("", 14, "italic"))
     
     def select_all(self):
         """全选文本"""
@@ -565,8 +553,6 @@ class MarkdownEditor:
         
         # 重新应用语法高亮
         self.highlight_syntax()
-        
-        return "break"
     
     def find_text(self):
         """查找文本"""
