@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, font, messagebox
 import markdown
-from ttkbootstrap import Style
+from ttkbootstrap import Window
+from ttkbootstrap.utility import enable_high_dpi_awareness
 from tkhtmlview import HTMLLabel
 import os
 import re
@@ -9,7 +10,9 @@ import sys
 
 class MarkdownEditor:
     # 常量定义
-    THEMES = ["litera", "vapor", "darkly", "cyborg", "superhero"]
+    LIGHT_THEMES = ["litera", "minty", "simplex", "cerculean"]  # 所有浅色主题
+    DARK_THEMES = ["vapor", "darkly"]  # 所有深色主题
+    THEMES = LIGHT_THEMES + DARK_THEMES  # 所有可用主题
     PREVIEW_DEFAULT_HTML = "<h1>Markdown 预览</h1><p>开始编辑以查看预览...</p>"
     def __init__(self, root):
         self.root = root
@@ -28,16 +31,13 @@ class MarkdownEditor:
         self.last_content = ""
         self.after_id = None  # 用于存储定时器ID
         
-        # 创建样式（只创建一次）
-        self.style = Style(theme="litera")
-        
         # 创建组件和菜单
         self.create_main_widgets()
         self.create_menu_bar()
         self.bind_events()
         
         # 更新主题标签
-        self.theme_label.config(text=f"主题: {self.style.theme.name}")
+        self.theme_label.config(text=f"主题: {self.root.style.theme.name}")
         
         # 初始内容 - 修改为空
         self.update_preview_and_status()
@@ -322,9 +322,9 @@ class MarkdownEditor:
         
     def apply_syntax_highlighting_colors(self):
         """应用语法高亮颜色（根据主题）"""
-        current_theme = self.style.theme.name
+        current_theme = self.root.style.theme.name
         
-        if current_theme in ["vapor", "darkly", "cyborg", "superhero"]:
+        if current_theme in self.DARK_THEMES:
             self.editor.tag_config("header", foreground="#66ccff")
             self.editor.tag_config("bold-italic", foreground="#ffaa66", font=("", 14, "bold italic"))
             self.editor.tag_config("bold", foreground="#ff7777", font=("", 14, "bold"))
@@ -532,7 +532,7 @@ class MarkdownEditor:
     def change_theme_directly(self, theme_name):
         """直接切换主题"""
         # 切换主题
-        self.style.theme_use(theme_name)
+        self.root.style.theme_use(theme_name)
         self.theme_label.config(text=f"主题: {theme_name}")
         
         # 更新预览
@@ -543,7 +543,7 @@ class MarkdownEditor:
         self.preview.set_html(html_content)
         
         # 根据主题更新编辑器颜色和语法高亮颜色
-        if theme_name in ["vapor", "darkly", "cyborg", "superhero"]:
+        if theme_name in self.DARK_THEMES:
             self.editor.config(bg="#2d2d2d", fg="#ffffff", insertbackground="white")
         else:
             self.editor.config(bg="#ffffff", fg="#000000", insertbackground="black")
@@ -662,6 +662,7 @@ class MarkdownEditor:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    enable_high_dpi_awareness()
+    root = Window(themename="litera")
     app = MarkdownEditor(root)
     root.mainloop()
